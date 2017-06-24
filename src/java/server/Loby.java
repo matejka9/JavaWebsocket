@@ -15,52 +15,50 @@ import javax.inject.Named;
 @Named
 @ApplicationScoped
 public class Loby {
+    public static final String SEPARATOR = ";;";
     
+    private static final int ROWS = 5;
+    private static final int COLUMNS = 7;
+    
+    //User names
     private Set<String> users = new HashSet<String>();
+    //gameName -> x,y locations
     private Map<String, Integer[][]> games = new HashMap<String, Integer[][]>();
+    //gameName -> who is on turn
     private Map<String, String> turns = new HashMap<String, String>();
+    //gamaName -> done or not
     private Map<String, Boolean> ends = new HashMap<String, Boolean>();
     
     public Loby() {
         System.out.println("Vytvaram loby");
     }
-
-    public int getNumberOfUsers() {
-        return users.size();
-    }
-
-//    public void setNumberOfUsers(int numberOfUsers) {
-//        this.numberOfUsers = numberOfUsers;
-//    }
     
     public Set<String> getUsers() {
         return users;
     }
     
-    public void addToUsers(String name) {
-        //TODO posli vsetkym doterajsim userom informaciu o novom
+    public void addUser(String name) {
         users.add(name);
     }
     
-    public void removeFromUsers(String name) {
-        //TODO posli vsetkym doterajsim userom informaciu o odstraneni usra
+    public void removeUser(String name) {
         users.remove(name);
     }
 
     void createGame(String string) {
-        games.put(string, new Integer[5][7]);
-        turns.put(string, string.split(";")[0]);
+        games.put(string, new Integer[ROWS][COLUMNS]);
+        turns.put(string, string.split(SEPARATOR)[0]);
         ends.put(string, Boolean.FALSE);
     }
 
     boolean move(String gameName, int row, int column) {
-        String firstName = gameName.split(";")[0];
-        String secondName = gameName.split(";")[1];
+        String firstName = gameName.split(SEPARATOR)[0];
+        String secondName = gameName.split(SEPARATOR)[1];
         if (!games.containsKey(gameName)){
-            gameName = secondName + ";" + firstName;
+            gameName = secondName + SEPARATOR + firstName;
         }
         int point = 0;
-        if (!turns.get(gameName).equals(gameName.split(";")[0])) {
+        if (!turns.get(gameName).equals(gameName.split(SEPARATOR)[0])) {
             point = 1;
         }
         Integer[][] game = games.get(gameName);
@@ -90,10 +88,10 @@ public class Loby {
     }
 
     public String endGame(String gameName, int r, int c, String firstName) {
-        String fss = gameName.split(";")[0];
-        String sec = gameName.split(";")[1];
+        String fss = gameName.split(SEPARATOR)[0];
+        String sec = gameName.split(SEPARATOR)[1];
         if (!games.containsKey(gameName)){
-            gameName = sec + ";" + fss;
+            gameName = sec + SEPARATOR + fss;
         }
         Integer[][] game = games.get(gameName);
         System.out.println("" + game);

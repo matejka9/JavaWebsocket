@@ -10,6 +10,8 @@
         var me, other;
         var gameRunning = false;
         
+        var SEPARATOR = ";;";
+        
         var messages = {
             addUser : 1,
             removeUser : 2, 
@@ -42,14 +44,14 @@
          
          function connect() 
          {
-              wsocket = new WebSocket("ws://localhost:8080/Websocket/message");
+              wsocket = new WebSocket("ws://localhost:8080/JavaWebsocket/message");
               wsocket.onmessage = onMessage;              
          }
          
          function onMessage(evt) 
          { 
-           var data = evt.data.split(";"); 
-           console.log(data);
+           var data = evt.data.split(SEPARATOR); 
+           console.log("Message " +  data);
            if (data[0] == messages.addUser) {
                 createUser(data[1]);
                 console.log(data[1] + " asjdiaojsdiosa");
@@ -107,7 +109,7 @@
                 elemDiv.addEventListener('click', function (){
                     var id = elemDiv.getAttribute("id");
                     console.log(id);
-                    sendMessage(messages.startGame, me + ";" + id)
+                    sendMessage(messages.startGame, me + SEPARATOR + id)
                 });
                 elemDiv.innerHTML = name;
                 names.appendChild(elemDiv);
@@ -115,7 +117,7 @@
          }
          
          function sendMessage(type, message) {
-            wsocket.send(type + ";" + message);
+            wsocket.send(type + SEPARATOR + message);
          }
 		 
         function endgameclick() {
@@ -151,7 +153,7 @@
     </h:body>
     
     <h:outputScript>
-        var NROWS = 5;
+            var NROWS = 5;
             var NCOLS = 7;
             var BW = 800;
             var BH = 500;
@@ -196,7 +198,7 @@
               }
               r = Math.floor((event.pageY - 10 - canvas.offsetTop) / CH);
               c = Math.floor((event.pageX - 10 - canvas.offsetLeft) / CW);
-              sendMessage(messages.move, me + ";" + other + ";" + r + ";" + c);
+              sendMessage(messages.move, me + SEPARATOR + other + SEPARATOR + r + SEPARATOR + c);
             }
             
             function drawCircle(onMove, r, c){

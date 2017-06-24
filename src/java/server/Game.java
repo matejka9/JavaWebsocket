@@ -21,7 +21,6 @@ public class Game implements Serializable{
     Loby loby;
     
     public Game() {
-        System.out.println("Vytvaram game");
     }
 
     public String getName() {
