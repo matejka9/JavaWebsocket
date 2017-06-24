@@ -1,0 +1,261 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+    <h:head>
+        <title>TODO supply a title</title>
+        <h:outputScript>
+        var wsocket;
+        var me, other;
+        var gameRunning = false;
+        
+        var messages = {
+            addUser : 1,
+            removeUser : 2, 
+            startGame : 3, 
+            move : 4, 
+            endGame : 5
+        }
+         window.onload = function() 
+         {
+            addExistingUsers();
+            connect();
+         }
+         
+         
+         
+         
+         function addExistingUsers(){
+            var users = document.getElementById("listusers");
+            console.log(users.innerHTML);
+            users = users.innerHTML.slice(1, -1);
+            users = users.split(",");
+            me = document.getElementById("name").innerHTML;
+            for (var i = 0; i &lt; users.length; i++) {
+                if (me != users[i]){
+                    createUser(users[i]);
+                }
+            }
+         }
+           
+         
+         function connect() 
+         {
+              wsocket = new WebSocket("ws://localhost:8080/Websocket/message");
+              wsocket.onmessage = onMessage;              
+         }
+         
+         function onMessage(evt) 
+         { 
+           var data = evt.data.split(";"); 
+           console.log(data);
+           if (data[0] == messages.addUser) {
+                createUser(data[1]);
+                console.log(data[1] + " asjdiaojsdiosa");
+           } else if (data[0] == messages.removeUser){
+                var elem = document.getElementById(data[1]);
+                if (elem != null) {
+                    elem.remove();
+                }
+           } else if (data[0] == messages.startGame) {
+                if (data[1] == me || data[2] == me){
+                    gameRunning = true;
+                    startGame();
+                    var loby = document.getElementById("lobby");
+                    var game = document.getElementById("gamme");
+                    loby.style.display = "none";
+                    game.style.display = "block";
+                    if (data[1] == me) {
+                        other = data[2];
+                    } else {
+                        other = data[1];
+                    }
+                }
+           } else if (data[0] == messages.move) {
+                if (data[1] == me || data[2] == me){
+                    var r = data[3];
+                    var c = data[4];
+                    drawCircle(onMove, r,c);
+                    if (onMove == 0) {
+                        onMove = 1;
+                    } else {
+                        onMove = 0;
+                    }
+                }
+           } else if (data[0] == messages.endGame) {
+                if (data[1] == me || data[2] == me){
+				var endgamediv = document.getElementById("endgame");
+                    if (data[3] == "") {
+						endgamediv.innerHTML = "Draw";
+                    } else {
+                        endgamediv.innerHTML = "User " + data[3] + " has won the game.";
+                    }
+					endgamediv.style.display = "block";
+                    gameRunning = false;
+                }
+           }
+         }
+         
+         function createUser(name){
+            if (name != me) {
+                var names = document.getElementById("names");
+                var elemDiv = document.createElement('p');
+                elemDiv.style.backgroundColor = 'rgb(0, 255, 0)';
+                elemDiv.style.textAlign = "center";
+                elemDiv.setAttribute("id", name);
+                elemDiv.addEventListener('click', function (){
+                    var id = elemDiv.getAttribute("id");
+                    console.log(id);
+                    sendMessage(messages.startGame, me + ";" + id)
+                });
+                elemDiv.innerHTML = name;
+                names.appendChild(elemDiv);
+            }
+         }
+         
+         function sendMessage(type, message) {
+            wsocket.send(type + ";" + message);
+         }
+		 
+        function endgameclick() {
+               var endgamediv = document.getElementById("endgame");
+               var gamediv = document.getElementById("gamme");
+               var lobydiv = document.getElementById("lobby");
+
+               endgamediv.style.display = "none";
+               gamediv.style.display = "none";
+               lobydiv.style.display = "block";
+
+               sendMessage(messages.endGame, "");
+<!--               location.reload();-->
+        }
+        </h:outputScript>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    </h:head>
+    <h:body>
+        <div id="lobby" style="display: block">
+            Welcome <h:outputText  id="name" value="#{game.name}" />
+            <h:outputText style="display: none;" id="listusers" value="#{loby.users}" />
+            <div id="names">
+
+            </div>
+        </div>
+        
+        <div id="gamme" style="display: none">
+            <canvas id="canvas" width="800" height="500" style="background-color:#333"></canvas>
+            <img id="shapeRed" src="http://capek.ii.fmph.uniba.sk/lstme/javascript/red.png" style="display: none;" />
+            <img id="shapeBlue" src="http://capek.ii.fmph.uniba.sk/lstme/javascript/blue.png" style="display: none;" />
+			<div id="endgame" style="display:none;" onclick="endgameclick()"></div>
+        </div>
+    </h:body>
+    
+    <h:outputScript>
+        var NROWS = 5;
+            var NCOLS = 7;
+            var BW = 800;
+            var BH = 500;
+            var CW = (BW - 20.0) / NCOLS;
+            var CH = (BH - 20.0) / NROWS;
+            var numMoves;
+            var shape = Array(2);
+            shape[0] = document.getElementById("shapeRed");
+            shape[1] = document.getElementById("shapeBlue");
+            var canvas = document.getElementById("canvas");
+            canvas.addEventListener("mousedown", doMouseDown, false);
+            var gameOver, board, onMove, won;
+            var ctx = canvas.getContext("2d");
+
+            function startGame()
+            {
+              gameOver = false;
+              drawBoard();
+              board = createBoard();
+              onMove = 0;
+              numMoves = 0;
+            }
+
+            function createBoard()
+            {
+              var b = new Array(NROWS);
+              for (var r = 0; r &lt; NROWS; r++)
+                b[r] = new Array(NCOLS);
+              for (r = 0; r &lt; NROWS; r++)
+                for (c = 0; c &lt; NCOLS; c++)
+                  b[r][c] = -1;
+              return b;
+            }
+
+
+            function doMouseDown(event)
+            {
+              if (gameOver) 
+              {
+                startGame();
+                return;
+              }
+              r = Math.floor((event.pageY - 10 - canvas.offsetTop) / CH);
+              c = Math.floor((event.pageX - 10 - canvas.offsetLeft) / CW);
+              sendMessage(messages.move, me + ";" + other + ";" + r + ";" + c);
+            }
+            
+            function drawCircle(onMove, r, c){
+                ctx.drawImage(shape[onMove], 17 + CW * c, 14 + CH * r);
+            }
+
+            function showWinner()
+            {
+              var msg;
+              ctx.font="bold 40px Georgia";
+              ctx.fillStyle="#D0D080";
+              switch (won) 
+              {
+                case -1: msg = "Draw :-("; break;
+                case 0: msg = "Red won!"; break;
+                case 1: msg = "Blue won!"; break;
+              }
+              ctx.fillText(msg, BW / 2 - 100, BH / 2);
+            }
+
+            function drawBoard()
+            {
+              ctx.fillStyle="#203010";
+              ctx.fillRect(10, 10, BW - 20, BH - 20);
+              fancyBorder(0, 10, 10, BH, 0);
+              fancyBorder(0, 0, BW - 10, 10, 1);
+              fancyBorder(BW - 10, 0, 10, BH - 10, 0);
+              fancyBorder(10, BH - 10, BW - 10, 10, 1);
+              drawGrid();
+            }
+
+            function fancyBorder(x, y, w, h, orient)
+            {
+              if (orient == 0) var grd = ctx.createLinearGradient(x, y, x + w, y);
+              else var grd = ctx.createLinearGradient(x, y, x, y + h);
+              grd.addColorStop(0, "#106010");
+              grd.addColorStop(0.5, "#909030");
+              grd.addColorStop(1, "#106010");
+              ctx.fillStyle = grd;
+              ctx.fillRect(x, y, w, h);
+            }
+
+            function drawGrid()
+            {
+              ctx.strokeStyle="#102010";
+              for (var col = 1; col &lt; NCOLS; col++)
+              {
+                ctx.beginPath();
+                ctx.moveTo(10 + col * CW, 10);
+                ctx.lineTo(10 + col * CW, BH - 10);
+                ctx.stroke();
+              }
+              for (var row = 1; row &lt; NROWS; row++)
+              {
+                ctx.beginPath();
+                ctx.moveTo(10, 10 + row * CH);
+                ctx.lineTo(BW - 10, 10 + row * CH);
+                ctx.stroke();
+              }
+            }
+    </h:outputScript>
+</html>
