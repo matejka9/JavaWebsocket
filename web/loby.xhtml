@@ -4,143 +4,14 @@
       xmlns:h="http://xmlns.jcp.org/jsf/html"
       xmlns:f="http://xmlns.jcp.org/jsf/core">
     <h:head>
-        <title>TODO supply a title</title>
-        <h:outputScript>
-        var wsocket;
-        var me, other;
-        var gameRunning = false;
-        
-        var SEPARATOR = ";;";
-        
-        var messages = {
-            addUser : 1,
-            removeUser : 2, 
-            startGame : 3, 
-            move : 4, 
-            endGame : 5
-        }
-         window.onload = function() 
-         {
-            addExistingUsers();
-            connect();
-         }
-         
-         
-         
-         
-         function addExistingUsers(){
-            var users = document.getElementById("listusers");
-            console.log(users.innerHTML);
-            users = users.innerHTML.slice(1, -1);
-            users = users.split(",");
-            me = document.getElementById("name").innerHTML;
-            for (var i = 0; i &lt; users.length; i++) {
-                if (me != users[i]){
-                    createUser(users[i]);
-                }
-            }
-         }
-           
-         
-         function connect() 
-         {
-              wsocket = new WebSocket("ws://localhost:8080/JavaWebsocket/message");
-              wsocket.onmessage = onMessage;              
-         }
-         
-         function onMessage(evt) 
-         { 
-           var data = evt.data.split(SEPARATOR); 
-           console.log("Message " +  data);
-           if (data[0] == messages.addUser) {
-                createUser(data[1]);
-                console.log(data[1] + " asjdiaojsdiosa");
-           } else if (data[0] == messages.removeUser){
-                var elem = document.getElementById(data[1]);
-                if (elem != null) {
-                    elem.remove();
-                }
-           } else if (data[0] == messages.startGame) {
-                if (data[1] == me || data[2] == me){
-                    gameRunning = true;
-                    startGame();
-                    var loby = document.getElementById("lobby");
-                    var game = document.getElementById("gamme");
-                    loby.style.display = "none";
-                    game.style.display = "block";
-                    if (data[1] == me) {
-                        other = data[2];
-                    } else {
-                        other = data[1];
-                    }
-                }
-           } else if (data[0] == messages.move) {
-                if (data[1] == me || data[2] == me){
-                    var r = data[3];
-                    var c = data[4];
-                    drawCircle(onMove, r,c);
-                    if (onMove == 0) {
-                        onMove = 1;
-                    } else {
-                        onMove = 0;
-                    }
-                }
-           } else if (data[0] == messages.endGame) {
-                if (data[1] == me || data[2] == me){
-				var endgamediv = document.getElementById("endgame");
-                    if (data[3] == "") {
-						endgamediv.innerHTML = "Draw";
-                    } else {
-                        endgamediv.innerHTML = "User " + data[3] + " has won the game.";
-                    }
-					endgamediv.style.display = "block";
-                    gameRunning = false;
-                }
-           }
-         }
-         
-         function createUser(name){
-            if (name != me) {
-                var names = document.getElementById("names");
-                var elemDiv = document.createElement('p');
-                elemDiv.style.backgroundColor = 'rgb(0, 255, 0)';
-                elemDiv.style.textAlign = "center";
-                elemDiv.setAttribute("id", name);
-                elemDiv.addEventListener('click', function (){
-                    var id = elemDiv.getAttribute("id");
-                    console.log(id);
-                    sendMessage(messages.startGame, me + SEPARATOR + id)
-                });
-                elemDiv.innerHTML = name;
-                names.appendChild(elemDiv);
-            }
-         }
-         
-         function sendMessage(type, message) {
-            wsocket.send(type + SEPARATOR + message);
-         }
-		 
-        function endgameclick() {
-               var endgamediv = document.getElementById("endgame");
-               var gamediv = document.getElementById("gamme");
-               var lobydiv = document.getElementById("lobby");
-
-               endgamediv.style.display = "none";
-               gamediv.style.display = "none";
-               lobydiv.style.display = "block";
-
-               sendMessage(messages.endGame, "");
-<!--               location.reload();-->
-        }
-        </h:outputScript>
+        <title>FunnyGame</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     </h:head>
     <h:body>
         <div id="lobby" style="display: block">
-            Welcome <h:outputText  id="name" value="#{game.name}" />
+            Here we go <h:outputText  id="name" value="#{game.name}" />
             <h:outputText style="display: none;" id="listusers" value="#{loby.users}" />
             <div id="names">
-
             </div>
         </div>
         
@@ -151,6 +22,143 @@
 			<div id="endgame" style="display:none;" onclick="endgameclick()"></div>
         </div>
     </h:body>
+
+    <h:outputScript>
+        var websocket;
+        var myName, otherName;
+        var gameRunning = false;
+
+        var SEPARATOR = ";;";
+
+        var MESSAGES = {
+            CREATE : 1,
+            REMOVE : 2,
+            START : 3,
+            MOVE : 4,
+            END : 5
+        }
+
+        window.onload = function(){
+            addUsers();
+            connectWebsocket();
+        }
+
+
+        function addUsers(){
+            var users = document.getElementById("listusers");
+            users = users.innerHTML.slice(1, -1);
+            users = users.split(",");
+            me = document.getElementById("name").innerHTML;
+            for (var i = 0; i &lt; users.length; i++) {
+                if (me != users[i]){
+                    createUser(users[i]);
+                }
+            }
+        }
+
+
+        function connectWebsocket()
+        {
+            websocket = new WebSocket("ws://localhost:8080/JavaWebsocket/message");
+            websocket.onmessage = onMessage;
+        }
+
+        function onMessage(evt){
+            var data = evt.data.split(SEPARATOR);
+            if (data[0] == MESSAGES.CREATE) {
+                createUser(data[1]);
+            } else if (data[0] == MESSAGES.REMOVE){
+                removeUser(data[1]);
+            } else if (data[0] == MESSAGES.START) {
+                startNewGame(data);
+            } else if (data[0] == MESSAGES.MOVE) {
+                move(data);
+            } else if (data[0] == MESSAGES.END) {
+                endGame(data);
+            }
+        }
+
+        function createUser(name){
+            if (name != me) {
+                var names = document.getElementById("names");
+                var elemDiv = document.createElement('p');
+                elemDiv.style.backgroundColor = 'rgb(0, 255, 0)';
+                elemDiv.style.textAlign = "center";
+                elemDiv.setAttribute("id", name);
+                elemDiv.addEventListener('click', function (){
+                    var id = elemDiv.getAttribute("id");
+                    sendMessage(MESSAGES.START, me + SEPARATOR + id)
+                });
+                elemDiv.innerHTML = name;
+                names.appendChild(elemDiv);
+            }
+        }
+
+        function removeUser(name) {
+            var elem = document.getElementById(name);
+            if (elem != null) {
+                elem.remove();
+            }
+        }
+
+        function startNewGame(data){
+            if (data[1] == me || data[2] == me){
+                gameRunning = true;
+                startGame();
+                var loby = document.getElementById("lobby");
+                var game = document.getElementById("gamme");
+                loby.style.display = "none";
+                game.style.display = "block";
+                if (data[1] == me) {
+                    other = data[2];
+                } else {
+                    other = data[1];
+                }
+            }
+        }
+
+        function move(data){
+            if (data[1] == me || data[2] == me){
+                var r = data[3];
+                var c = data[4];
+                drawCircle(onMove, r,c);
+                if (onMove == 0) {
+                    onMove = 1;
+                } else {
+                    onMove = 0;
+                }
+            }
+        }
+
+        function endGame(data){
+            if (data[1] == me || data[2] == me){
+                var endgamediv = document.getElementById("endgame");
+                if (data[3] == "") {
+                    endgamediv.innerHTML = "Draw";
+                } else {
+                    endgamediv.innerHTML = "User " + data[3] + " won.";
+                }
+                endgamediv.style.display = "block";
+                gameRunning = false;
+            }
+        }
+
+        function sendMessage(type, message) {
+            websocket.send(type + SEPARATOR + message);
+        }
+
+        function endgameclick() {
+            var endgamediv = document.getElementById("endgame");
+            var gamediv = document.getElementById("gamme");
+            var lobydiv = document.getElementById("lobby");
+
+            endgamediv.style.display = "none";
+            gamediv.style.display = "none";
+            lobydiv.style.display = "block";
+
+            sendMessage(MESSAGES.END, "");
+        }
+    </h:outputScript>
     
     <h:outputScript>
             var NROWS = 5;
@@ -170,12 +178,13 @@
 
             function startGame()
             {
-              gameOver = false;
-              drawBoard();
-              board = createBoard();
-              onMove = 0;
-              numMoves = 0;
+                gameOver = false;
+                drawBoard();
+                board = createBoard();
+                onMove = 0;
+                numMoves = 0;
             }
+
 
             function createBoard()
             {
@@ -198,7 +207,7 @@
               }
               r = Math.floor((event.pageY - 10 - canvas.offsetTop) / CH);
               c = Math.floor((event.pageX - 10 - canvas.offsetLeft) / CW);
-              sendMessage(messages.move, me + SEPARATOR + other + SEPARATOR + r + SEPARATOR + c);
+              sendMessage(MESSAGES.MOVE, me + SEPARATOR + other + SEPARATOR + r + SEPARATOR + c);
             }
             
             function drawCircle(onMove, r, c){

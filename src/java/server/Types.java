@@ -5,12 +5,12 @@
  */
 package server;
 
-public enum MessageType {
-    addUser(1), removeUser(2), startGame(3), move(4), endGame(5);
+public enum Types {
+    CREATE(1), REMOVE(2), START(3), MOVE(4), END(5);
     
     public int value;
 
-    MessageType(int value){
+    Types(int value){
         this.value = value;
     }
 }

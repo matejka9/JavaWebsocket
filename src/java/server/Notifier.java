@@ -17,12 +17,9 @@ public class Notifier {
     
     @Inject
     Game game;
-    
     @Inject
     Loby loby;
-    
     private String name;
-    
     private Session mySession;
     
     @OnOpen
@@ -31,31 +28,26 @@ public class Notifier {
         name = game.getName();
         mySession = session;
         game.setNotifier(this);
-        addToGame();
+        connectToGame();
     }
     
-    public void addToGame(){
-            loby.addUser(name);
-            announce(MessageType.addUser.value, name);
-    }
+
 
     @OnClose
     public void close(Session session, CloseReason reason) 
     { 
         System.out.println("Zatvaram");
         loby.removeUser(name);
-        announce(MessageType.removeUser.value, name);
+        announce(Types.REMOVE.value, name);
     }
     
-    public void announce(int num, String msg)
+    public void announce(int type, String msg)
     {
-        String fullMsg = Integer.toString(num) + SEPARATOR + msg;
+        String fullMsg = transform(type, msg);
         System.out.println(fullMsg);
         try {            
          for (Session sess : mySession.getOpenSessions()) {
-            System.out.println("Je tu session");
-            if (shouldSend(sess, num)) {
-               System.out.println("Posielam");
+            if (shouldSend(sess, type)) {
                sess.getBasicRemote().sendText(fullMsg);
             }
                 
@@ -65,47 +57,67 @@ public class Notifier {
       }
     }
     
-    private boolean shouldSend(Session sess, int num) {
+    private boolean shouldSend(Session sess, int type) {
         if (sess.equals(mySession)) {
-            return sess.isOpen() && num != MessageType.addUser.value;
+            return sess.isOpen() && type != Types.CREATE.value;
         } 
         return sess.isOpen();
     }
     
     @OnMessage
-    public void messageReceiver(String message) {
-        System.out.println("Received message:" + message);
+    public void onMessage(String message) {
+        System.out.println(message);
         String[] messages = message.split(SEPARATOR);
-        for (int i = 0; i < messages.length; i++){
-            System.out.println(messages[i]);
-        }
         int type = Integer.valueOf(messages[0]);
-        if (type == MessageType.startGame.value){
-            announce(type, messages[1] + SEPARATOR + messages[2]);
-            announce(MessageType.removeUser.value, messages[1]);
-            announce(MessageType.removeUser.value, messages[2]);
-            loby.removeUser(messages[1]);
-            loby.removeUser(messages[2]);
-            loby.createGame(messages[1] + SEPARATOR + messages[2]);
-            game.setPlaying(true);
-        } else if (type == MessageType.move.value) {
-            String gameName = messages[1] + SEPARATOR + messages[2];
-            int row = Integer.valueOf(messages[3]);
-            int column = Integer.valueOf(messages[4]);
-            boolean didMove = loby.move(gameName, row, column);
-            if (didMove){
-                announce(MessageType.move.value, messages[1] + SEPARATOR + messages[2] + SEPARATOR + messages[3] + SEPARATOR + messages[4]);
-                String winner = loby.endGame(gameName, row, column, messages[1]);
-                System.out.println("" + winner);
-                if (winner != null){
-                    announce(MessageType.endGame.value, gameName + SEPARATOR + winner);
-                }
-            }
-        } else if (type == MessageType.endGame.value) {
-            System.out.println("endgame " + name);
-            addToGame();
+        if (type == Types.START.value){
+            startGame(messages);
+        } else if (type == Types.MOVE.value) {
+            move(messages);
+        } else if (type == Types.END.value) {
+            connectToGame();
         }
         
+    }
+
+
+    private void startGame(String[] messages) {
+        announce(Types.START.value, transform(messages[1] ,messages[2]));
+        announce(Types.REMOVE.value, messages[1]);
+        announce(Types.REMOVE.value, messages[2]);
+        loby.removeUser(messages[1]);
+        loby.removeUser(messages[2]);
+        loby.createGame(transform(messages[1],messages[2]));
+        game.setPlaying(true);
+    }
+
+    private void move(String[] messages) {
+        String gameName = transform(messages[1], messages[2]);
+        int row = Integer.valueOf(messages[3]);
+        int column = Integer.valueOf(messages[4]);
+        boolean didMove = loby.didMove(gameName, row, column);
+        if (didMove){
+            announce(Types.MOVE.value, transform(messages[1], messages[2], messages[3], messages[4]));
+            String winner = loby.checkWinner(gameName, row, column);
+            if (winner != null){
+                announce(Types.END.value, transform(gameName, winner));
+            }
+        }
+    }
+
+    private void connectToGame(){
+        loby.addUser(name);
+        announce(Types.CREATE.value, name);
+    }
+
+    private String transform(Object... args){
+        String result = "";
+        for (int index = 0; index < args.length; index++){
+            result += args[index];
+            if (index != args.length){
+                result += SEPARATOR;
+            }
+        }
+        return result;
     }
     
 }
