@@ -11,7 +11,7 @@
         <div id="lobby" style="display: block">
             Here we go <h:outputText  id="name" value="#{game.name}" />
             <h:outputText style="display: none;" id="listusers" value="#{loby.users}" />
-            <div id="names">
+            <div id="names" style="position: relative">
             </div>
         </div>
         
@@ -19,7 +19,7 @@
             <canvas id="canvas" width="800" height="500" style="background-color:#333"></canvas>
             <img id="shapeRed" src="http://capek.ii.fmph.uniba.sk/lstme/javascript/red.png" style="display: none;" />
             <img id="shapeBlue" src="http://capek.ii.fmph.uniba.sk/lstme/javascript/blue.png" style="display: none;" />
-			<div id="endgame" style="display:none;" onclick="endgameclick()"></div>
+			<div id="endgame" style="display:none; background-color: #4CAF50; border: none; color: white; padding: 15px 32px; text-align: center; text-decoration: none; font-size: 16px; margin: auto;" onclick="endgameclick()"></div>
         </div>
     </h:body>
 
@@ -79,17 +79,27 @@
         }
 
         function createUser(name){
-            if (name != me) {
+            if (name != me &amp;&amp; name != "" &amp;&amp; name !== 'undefined') {
                 var names = document.getElementById("names");
                 var elemDiv = document.createElement('p');
-                elemDiv.style.backgroundColor = 'rgb(0, 255, 0)';
+                elemDiv.style.display = 'inline-block';
+                elemDiv.style.float = 'left';
+                elemDiv.style.clear = 'left';
+                elemDiv.style.backgroundColor = '#BB3300';
+                elemDiv.style.border = "none";
+                elemDiv.style.color = "white";
+                elemDiv.style.padding = "15px 32px";
                 elemDiv.style.textAlign = "center";
+                elemDiv.style.textDecoration = "none";
+                elemDiv.style.fontSize = "16px";
+                elemDiv.style.textAlign = "center";
+                elemDiv.style.margin = "5px auto";
                 elemDiv.setAttribute("id", name);
                 elemDiv.addEventListener('click', function (){
                     var id = elemDiv.getAttribute("id");
                     sendMessage(MESSAGES.START, me + SEPARATOR + id)
                 });
-                elemDiv.innerHTML = name;
+                elemDiv.innerHTML = "Challange: " + name;
                 names.appendChild(elemDiv);
             }
         }
@@ -136,9 +146,13 @@
                 if (data[3] == "") {
                     endgamediv.innerHTML = "Draw";
                 } else {
-                    endgamediv.innerHTML = "User " + data[3] + " won.";
+                    if (data[3] == myName){ 
+                        endgamediv.innerHTML = "You have won.";
+                    } else {
+                        endgamediv.innerHTML = "You have lost.";
+                    }
                 }
-                endgamediv.style.display = "block";
+                endgamediv.style.display = "inline-block";
                 gameRunning = false;
             }
         }

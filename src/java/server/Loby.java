@@ -44,17 +44,20 @@ public class Loby {
         users.remove(name);
     }
 
-    void createGame(String string) {
-        games.put(string, new Integer[ROWS][COLUMNS]);
-        gamesPlayerTurn.put(string, string.split(SEPARATOR)[0]);
-        gamesEnd.put(string, Boolean.FALSE);
+    void createGame(String gameName) {
+        games.put(gameName, new Integer[ROWS][COLUMNS]);
+        gamesPlayerTurn.put(gameName, gameName.split(SEPARATOR)[0]);
+        gamesEnd.put(gameName, Boolean.FALSE);
     }
 
     boolean didMove(String gameName, int row, int column) {
         String firstName = gameName.split(SEPARATOR)[0];
         String secondName = gameName.split(SEPARATOR)[1];
         gameName = getGameName(gameName, firstName, secondName);
+        System.out.println(gameName);
         int point = 0;
+        System.out.println(gamesPlayerTurn.get(gameName));
+        System.out.println(gamesPlayerTurn.get(gameName.split(SEPARATOR)[0]));
         if (!gamesPlayerTurn.get(gameName).equals(gameName.split(SEPARATOR)[0])) {
             point = 1;
         }

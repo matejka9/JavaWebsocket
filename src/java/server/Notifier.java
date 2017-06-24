@@ -92,6 +92,7 @@ public class Notifier {
 
     private void move(String[] messages) {
         String gameName = transform(messages[1], messages[2]);
+        System.out.println("Transformed to: " + gameName);
         int row = Integer.valueOf(messages[3]);
         int column = Integer.valueOf(messages[4]);
         boolean didMove = loby.didMove(gameName, row, column);
@@ -113,7 +114,7 @@ public class Notifier {
         String result = "";
         for (int index = 0; index < args.length; index++){
             result += args[index];
-            if (index != args.length){
+            if (index < args.length - 1){
                 result += SEPARATOR;
             }
         }
